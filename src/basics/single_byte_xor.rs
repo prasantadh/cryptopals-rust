@@ -30,7 +30,7 @@ pub fn solve(ciphertexts: &[HexString]) -> Result<Vec<HexString>> {
         .par_iter()
         .filter_map(|ciphertext| solve_one(ciphertext).ok())
         .collect();
-    if answer.len() == 0 {
+    if answer.is_empty() {
         Err(Error::NoSolution)
     } else {
         Ok(answer)
@@ -40,16 +40,13 @@ pub fn solve(ciphertexts: &[HexString]) -> Result<Vec<HexString>> {
 #[cfg(test)]
 mod test {
     use core::str::FromStr;
-    use std::path::Path;
 
     use super::*;
-    use crate::HexString;
+    use crate::{HexString, config::init_for_tests};
 
     #[test]
     fn solve_one_works() {
-        // INFO: How come Path::new() returns a reference?
-        let wordlist = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/words");
-        crate::config::init(&wordlist).expect("tests/fixtures/words should be readable");
+        init_for_tests();
         let input = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
         let ciphertext = HexString::from_str(input).expect("a valid HexString");
         let answer = solve_one(&ciphertext).expect("a valid solution");

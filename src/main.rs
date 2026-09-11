@@ -22,46 +22,38 @@ enum Mode {
     RepeatByteXor,
 }
 
-fn main() -> cryptopals::Result<()> {
+fn run() -> cryptopals::Result<()> {
     let args = Args::parse();
-    if let Err(err) = cryptopals::config::init(&args.wordlist) {
-        eprintln!("error: {err}");
-        process::exit(1);
-    }
+    cryptopals::config::init(&args.wordlist)?;
 
     // reading the ciphertexts
-    let content = match fs::read_to_string(&args.ciphertext_file) {
-        Ok(content) => content,
-        Err(source) => {
-            eprintln!(
-                "error: {}",
-                Error::FileRead {
-                    path: args.ciphertext_file,
-                    source
-                }
-            );
-            process::exit(1);
-        }
-    };
+    let content = fs::read_to_string(&args.ciphertext_file).map_err(|source| Error::FileRead {
+        path: args.ciphertext_file,
+        source,
+    })?;
 
     let ciphertexts = content
         .lines()
         .map(str::trim)
         .filter(|line| !line.is_empty())
         .map(HexString::from_str)
-        // INFO: ? after collect drops the result for every item in vector?
         .collect::<cryptopals::Result<Vec<_>>>()?;
 
     // run the solver
     match args.mode {
         Mode::SingleByteXor => {
-            if let Ok(answers) = single_byte_xor::solve(&ciphertexts) {
-                for answer in answers {
-                    println!("{answer}")
-                }
+            for answer in single_byte_xor::solve(&ciphertexts)? {
+                println!("{answer}")
             }
         }
         Mode::RepeatByteXor => todo!(),
     }
     Ok(())
+}
+
+fn main() {
+    if let Err(err) = run() {
+        eprintln!("error: {err}");
+        process::exit(1);
+    }
 }

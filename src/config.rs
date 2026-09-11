@@ -28,3 +28,12 @@ pub fn config() -> &'static Config {
         .get()
         .expect("config::init() must be called before config()")
 }
+
+#[cfg(test)]
+pub(crate) fn init_for_tests() {
+    let wordlist = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/words");
+    match init(&wordlist) {
+        Ok(()) | Err(Error::ConfigAlreadyInitialized) => {}
+        Err(err) => panic!("test wordlist should load: {err}"),
+    }
+}

@@ -24,7 +24,7 @@ impl Display for Error {
                 write!(f, "could not read {}: {source}", path.display())
             }
             Self::HexDecode(err) => write!(f, "invalid hex: {err}"),
-            Self::LengthMismatch => write!(f, "inputs have different length"),
+            Self::LengthMismatch => write!(f, "inputs have different lengths"),
             Self::ConfigAlreadyInitialized => write!(f, "config::init() was called more than once"),
             Self::NoSolution => write!(f, "no plausible plaintext found"),
         }
