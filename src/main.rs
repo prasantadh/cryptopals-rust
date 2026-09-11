@@ -1,9 +1,9 @@
-use core::str::FromStr;
-use std::path::PathBuf;
+use cryptopals::{Error, HexString, single_byte_xor};
 
 use clap::{Parser, ValueEnum};
-use cryptopals::{HexString, single_byte_xor};
+use core::str::FromStr;
 use std::fs;
+use std::{path::PathBuf, process};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about=None)]
@@ -22,19 +22,35 @@ enum Mode {
     RepeatByteXor,
 }
 
-fn main() {
+fn main() -> cryptopals::Result<()> {
     let args = Args::parse();
-    cryptopals::config::init(&args.wordlist).expect("a correct wordlist file");
+    if let Err(err) = cryptopals::config::init(&args.wordlist) {
+        eprintln!("error: {err}");
+        process::exit(1);
+    }
 
     // reading the ciphertexts
-    // INFO: expect won't produce a very nice message, just crash
-    let content =
-        fs::read_to_string(args.ciphertext_file).expect("failed to read the wordlist file");
-    let ciphertexts: Vec<HexString> = content
-        .split('\n')
+    let content = match fs::read_to_string(&args.ciphertext_file) {
+        Ok(content) => content,
+        Err(source) => {
+            eprintln!(
+                "error: {}",
+                Error::FileRead {
+                    path: args.ciphertext_file,
+                    source
+                }
+            );
+            process::exit(1);
+        }
+    };
+
+    let ciphertexts = content
+        .lines()
+        .map(str::trim)
         .filter(|line| !line.is_empty())
-        .map(|line| HexString::from_str(line.trim()).expect("a valid hexstring for ciphertext"))
-        .collect();
+        .map(HexString::from_str)
+        // INFO: ? after collect drops the result for every item in vector?
+        .collect::<cryptopals::Result<Vec<_>>>()?;
 
     // run the solver
     match args.mode {
@@ -47,4 +63,5 @@ fn main() {
         }
         Mode::RepeatByteXor => todo!(),
     }
+    Ok(())
 }

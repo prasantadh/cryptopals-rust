@@ -8,7 +8,11 @@ pub struct Config {
 }
 
 pub fn init(wordlist_file: &Path) -> Result<()> {
-    let content = fs::read(wordlist_file).expect("failed to read the wordlist file");
+    let content = fs::read(wordlist_file).map_err(|source| Error::FileRead {
+        path: wordlist_file.to_path_buf(),
+        source,
+    })?;
+
     let wordlist = content
         .split(|b| *b == b'\n')
         .map(|line| line.trim_ascii().to_ascii_lowercase().to_vec())
@@ -22,5 +26,5 @@ pub fn init(wordlist_file: &Path) -> Result<()> {
 pub fn config() -> &'static Config {
     INSTANCE
         .get()
-        .expect("Fatal - config() called before init_config()")
+        .expect("config::init() must be called before config()")
 }

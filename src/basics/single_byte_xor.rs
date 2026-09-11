@@ -13,7 +13,7 @@ pub fn solve_one(ciphertext: &HexString) -> Result<HexString> {
             (answer_score, answer)
         })
         .max_by(|&(k1, _), &(k2, _)| k1.cmp(&k2))
-        .unwrap();
+        .expect("0..=255 is non-empty so max_by should return Some");
     // INFO: This is a bit of a hard-coded threshold
     // which check for at least one valid word with 3 characters
     // in it. works for our current scoring algorithm but would
@@ -47,9 +47,9 @@ mod test {
 
     #[test]
     fn solve_one_works() {
-        // INFO: this test depends on where the wordlist being available
-        // turn this into using a local fixture
-        crate::config::init(Path::new("/usr/share/dict/words")).expect("a valid wordlist path");
+        // INFO: How come Path::new() returns a reference?
+        let wordlist = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/words");
+        crate::config::init(&wordlist).expect("tests/fixtures/words should be readable");
         let input = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
         let ciphertext = HexString::from_str(input).expect("a valid HexString");
         let answer = solve_one(&ciphertext).expect("a valid solution");
