@@ -4,7 +4,7 @@ use rayon::prelude::*;
 use crate::{Error, Result};
 use crate::{HexString, score::score};
 
-pub fn solve(ciphertext: &HexString) -> Result<HexString> {
+pub fn solve_one(ciphertext: &HexString) -> Result<HexString> {
     let answer = (0..=255)
         .into_par_iter()
         .map(|key| {
@@ -25,22 +25,34 @@ pub fn solve(ciphertext: &HexString) -> Result<HexString> {
     }
 }
 
+pub fn solve(ciphertexts: &[HexString]) -> Result<Vec<HexString>> {
+    let answer: Vec<HexString> = ciphertexts
+        .par_iter()
+        .filter_map(|ciphertext| solve_one(ciphertext).ok())
+        .collect();
+    if answer.len() == 0 {
+        Err(Error::NoSolution)
+    } else {
+        Ok(answer)
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use core::convert::{From, TryFrom};
+    use core::str::FromStr;
     use std::path::Path;
 
     use super::*;
     use crate::HexString;
 
     #[test]
-    fn solve_works() {
+    fn solve_one_works() {
         // INFO: this test depends on where the wordlist being available
         // turn this into using a local fixture
         crate::config::init(Path::new("/usr/share/dict/words")).expect("a valid wordlist path");
         let input = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
-        let ciphertext = HexString::try_from(String::from(input)).expect("a valid HexString");
-        let answer = solve(&ciphertext).expect("a valid solution");
+        let ciphertext = HexString::from_str(input).expect("a valid HexString");
+        let answer = solve_one(&ciphertext).expect("a valid solution");
         assert_eq!(answer.as_bytes(), b"Cooking MC's like a pound of bacon");
     }
 }

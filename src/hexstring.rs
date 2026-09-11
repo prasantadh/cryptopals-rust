@@ -1,4 +1,4 @@
-use core::{clone::Clone, fmt::Display, result::Result::Ok};
+use core::{clone::Clone, fmt::Display, result::Result::Ok, str::FromStr};
 
 use crate::{Error, Result};
 use base64::prelude::*;
@@ -6,10 +6,10 @@ use base64::prelude::*;
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Clone)]
 pub struct HexString(Vec<u8>);
 
-impl TryFrom<String> for HexString {
-    type Error = Error;
-    fn try_from(value: String) -> core::result::Result<Self, Self::Error> {
-        let value = hex::decode(value)?;
+impl FromStr for HexString {
+    type Err = Error;
+    fn from_str(s: &str) -> core::result::Result<Self, Self::Err> {
+        let value = hex::decode(s)?;
         Ok(Self(value))
     }
 }
@@ -70,28 +70,26 @@ impl Display for HexString {
 
 #[cfg(test)]
 mod test {
-    use core::convert::TryFrom;
+    use core::str::FromStr;
 
     use crate::HexString;
     #[test]
     fn to_base64_works() {
-        let input = String::from(
-            "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d",
-        );
+        let input = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d";
         assert_eq!(
-            HexString::try_from(input).expect("REASON").to_base64(),
+            HexString::from_str(input).expect("REASON").to_base64(),
             "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
         )
     }
 
     #[test]
     fn fixed_xor_works() {
-        let s1 = HexString::try_from(String::from("1c0111001f010100061a024b53535009181c"))
-            .expect("valid hexstring");
-        let s2 = HexString::try_from(String::from("686974207468652062756c6c277320657965"))
-            .expect("valid hexstring");
-        let result = HexString::try_from(String::from("746865206b696420646f6e277420706c6179"))
-            .expect("valid hexstring");
+        let s1 =
+            HexString::from_str("1c0111001f010100061a024b53535009181c").expect("valid hexstring");
+        let s2 =
+            HexString::from_str("686974207468652062756c6c277320657965").expect("valid hexstring");
+        let result =
+            HexString::from_str("746865206b696420646f6e277420706c6179").expect("valid hexstring");
         assert_eq!(
             s1.fixed_xor(&s2).expect("successful xor"),
             result.as_bytes()

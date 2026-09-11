@@ -4,7 +4,7 @@ mod error;
 mod hexstring;
 mod score;
 
-pub use basics::{detect_single_byte_xor, single_byte_xor};
+pub use basics::single_byte_xor;
 pub use config::config;
 pub use error::Error;
 pub use error::Result;
