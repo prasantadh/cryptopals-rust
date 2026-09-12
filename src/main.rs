@@ -1,7 +1,6 @@
 use cryptopals::{Error, HexString, single_byte_xor};
 
 use clap::{Parser, ValueEnum};
-use core::str::FromStr;
 use std::fs;
 use std::{path::PathBuf, process};
 
@@ -32,18 +31,13 @@ fn run() -> cryptopals::Result<()> {
         source,
     })?;
 
-    let ciphertexts = content
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty())
-        .map(HexString::from_str)
-        .collect::<cryptopals::Result<Vec<_>>>()?;
+    let ciphertexts = HexString::parse_lines(&content)?;
 
     // run the solver
     match args.mode {
         Mode::SingleByteXor => {
             for answer in single_byte_xor::solve(&ciphertexts)? {
-                println!("{answer}")
+                println!("{}", answer.plaintext)
             }
         }
         Mode::RepeatByteXor => todo!(),

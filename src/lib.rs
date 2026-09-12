@@ -9,6 +9,4 @@ pub use config::config;
 pub use error::Error;
 pub use error::Result;
 pub use hexstring::HexString;
-pub use score::score;
-
-pub type Ciphertexts = Vec<HexString>;
+pub use score::{Candidate, score};

@@ -1,9 +1,10 @@
-use core::{clone::Clone, fmt::Display, result::Result::Ok, str::FromStr};
+use core::{clone::Clone, fmt::Display, iter::Iterator, str::FromStr};
 
 use crate::{Error, Result};
 use base64::prelude::*;
+use std::fmt::Debug;
 
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Clone)]
+#[derive(Eq, PartialEq, Ord, PartialOrd, Clone)]
 pub struct HexString(Vec<u8>);
 
 impl FromStr for HexString {
@@ -24,38 +25,41 @@ impl HexString {
     }
 
     pub fn fixed_xor(&self, other: &HexString) -> Result<Vec<u8>> {
-        if self.0.len() != other.len() {
+        if self.len() != other.len() {
             return Err(Error::LengthMismatch);
         }
-        let mut answer = vec![0; self.len()];
-        for i in 0..self.len() {
-            answer[i] = self.0[i] ^ other.nth(i);
-        }
-        Ok(answer)
+        Ok(self
+            .0
+            .iter()
+            .zip(other.as_bytes())
+            .map(|(a, b)| a ^ b)
+            .collect())
     }
 
-    pub fn single_byte_xor(&self, key: u8) -> HexString {
-        let mut ciphertext = self.clone();
-        for i in 0..self.len() {
-            ciphertext.0[i] ^= key;
-        }
-        ciphertext
+    pub fn single_byte_xor(&self, key: u8) -> Self {
+        Self(self.0.iter().map(|b| b ^ key).collect())
     }
 
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
-    pub fn nth(&self, i: usize) -> u8 {
-        self.0[i]
-    }
-
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
     }
+
+    pub fn parse_lines(content: &str) -> Result<Vec<Self>> {
+        content
+            .lines()
+            // INFO: Is map filter map and anti-pattern and should i prefer filter_map?
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .map(HexString::from_str)
+            .collect()
+    }
 }
 
-impl Display for HexString {
+impl Debug for HexString {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         for c in self.as_bytes() {
             if c.is_ascii() && !c.is_ascii_control() {
@@ -65,6 +69,12 @@ impl Display for HexString {
             }
         }
         Ok(())
+    }
+}
+
+impl Display for HexString {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", String::from_utf8_lossy(&self.0))
     }
 }
 
