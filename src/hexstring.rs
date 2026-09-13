@@ -1,17 +1,16 @@
-use core::{clone::Clone, fmt::Display, iter::Iterator, str::FromStr};
-
 use crate::{Error, Result};
 use base64::prelude::*;
+use core::{clone::Clone, fmt::Display, iter::Iterator, str::FromStr};
 use std::fmt::Debug;
 
-#[derive(Eq, PartialEq, Ord, PartialOrd, Clone)]
-pub struct HexString(Vec<u8>);
+#[derive(Eq, PartialEq, Clone)]
+pub struct HexString(Box<[u8]>);
 
 impl FromStr for HexString {
     type Err = Error;
-    fn from_str(s: &str) -> core::result::Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         let value = hex::decode(s)?;
-        Ok(Self(value))
+        Ok(Self(value.into_boxed_slice()))
     }
 }
 
@@ -24,24 +23,29 @@ impl HexString {
         BASE64_STANDARD.encode(&self.0)
     }
 
-    pub fn fixed_xor(&self, other: &HexString) -> Result<Vec<u8>> {
+    pub fn fixed_xor(&self, other: &Self) -> Result<Self> {
         if self.len() != other.len() {
             return Err(Error::LengthMismatch);
         }
-        Ok(self
+        let answer: Box<[u8]> = self
             .0
             .iter()
             .zip(other.as_bytes())
             .map(|(a, b)| a ^ b)
-            .collect())
+            .collect();
+        Ok(Self(answer))
     }
 
     pub fn single_byte_xor(&self, key: u8) -> Self {
         Self(self.0.iter().map(|b| b ^ key).collect())
     }
 
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.0.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 
     pub fn as_bytes(&self) -> &[u8] {
@@ -54,7 +58,7 @@ impl HexString {
             // INFO: Is map filter map and anti-pattern and should i prefer filter_map?
             .map(str::trim)
             .filter(|line| !line.is_empty())
-            .map(HexString::from_str)
+            .map(Self::from_str)
             .collect()
     }
 }
@@ -63,9 +67,9 @@ impl Debug for HexString {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         for c in self.as_bytes() {
             if c.is_ascii() && !c.is_ascii_control() {
-                write!(f, "{}", *c as char)?
+                write!(f, "{}", *c as char)?;
             } else {
-                write!(f, "\\x{:02X}", c)?
+                write!(f, "\\x{c:02X}")?;
             }
         }
         Ok(())
@@ -91,7 +95,7 @@ mod test {
                 .expect("input taken from cryptopals must be valid hex string")
                 .to_base64(),
             "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
-        )
+        );
     }
 
     #[test]
@@ -102,9 +106,6 @@ mod test {
             HexString::from_str("686974207468652062756c6c277320657965").expect("valid hexstring");
         let result =
             HexString::from_str("746865206b696420646f6e277420706c6179").expect("valid hexstring");
-        assert_eq!(
-            s1.fixed_xor(&s2).expect("successful xor"),
-            result.as_bytes()
-        );
+        assert_eq!(s1.fixed_xor(&s2).expect("successful xor"), result);
     }
 }

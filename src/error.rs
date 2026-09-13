@@ -4,6 +4,7 @@ use std::path::PathBuf;
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     HexDecode(hex::FromHexError),
     FileRead {
@@ -33,6 +34,6 @@ impl Display for Error {
 
 impl From<hex::FromHexError> for Error {
     fn from(err: hex::FromHexError) -> Self {
-        Error::HexDecode(err)
+        Self::HexDecode(err)
     }
 }

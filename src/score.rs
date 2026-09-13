@@ -14,14 +14,12 @@ pub struct Candidate {
 }
 
 impl Candidate {
-    pub fn is_plausible(&self) -> bool {
+    pub const fn is_plausible(&self) -> bool {
         self.score >= MIN_SCORE
     }
 }
 
 pub fn score(text: &HexString) -> u64 {
-    // also need to score based on the words
-    // oncecell with a wordlist, then consult that in the future
     let words = text.as_bytes().split(|b| *b == b' ');
     let mut answer = 0;
     for word in words {

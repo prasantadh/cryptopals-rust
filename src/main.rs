@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 use cryptopals::{Error, HexString, single_byte_xor};
 
 use clap::{Parser, ValueEnum};
@@ -37,7 +38,7 @@ fn run() -> cryptopals::Result<()> {
     match args.mode {
         Mode::SingleByteXor => {
             for answer in single_byte_xor::solve(&ciphertexts)? {
-                println!("{}", answer.plaintext)
+                println!("{}", answer.plaintext);
             }
         }
         Mode::RepeatByteXor => todo!(),

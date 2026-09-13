@@ -5,7 +5,7 @@ use crate::{Error, Result};
 use crate::{HexString, score::score};
 
 fn candidates(ciphertext: &HexString) -> impl ParallelIterator<Item = Candidate> + '_ {
-    (0..=255).into_par_iter().map(|key| {
+    (0..=u8::MAX).into_par_iter().map(|key| {
         let plaintext = ciphertext.single_byte_xor(key);
         let score = score(&plaintext);
         Candidate {

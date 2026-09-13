@@ -15,7 +15,7 @@ pub fn init(wordlist_file: &Path) -> Result<()> {
 
     let wordlist = content
         .split(|b| *b == b'\n')
-        .map(|line| line.trim_ascii().to_ascii_lowercase().to_vec())
+        .map(|line| line.trim_ascii().to_ascii_lowercase())
         .filter(|line| !line.is_empty())
         .collect();
     INSTANCE

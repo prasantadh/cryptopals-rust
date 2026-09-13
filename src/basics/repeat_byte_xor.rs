@@ -1,6 +1,6 @@
 use crate::HexString;
 
-#[allow(unused)]
-pub fn encrypt(ciphertexts: &[HexString], key: &HexString) -> HexString {
+#[expect(unused, reason = "not implemented yet")]
+pub fn encrypt(plaintexts: &HexString, key: &HexString) -> HexString {
     todo!();
 }
