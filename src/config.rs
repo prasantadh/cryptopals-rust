@@ -4,7 +4,7 @@ use std::{collections::HashSet, fs, path::Path, sync::OnceLock};
 static INSTANCE: OnceLock<Config> = OnceLock::new();
 
 pub struct Config {
-    pub wordlist: HashSet<Vec<u8>>,
+    pub wordlist: HashSet<Box<[u8]>>,
 }
 
 pub fn init(wordlist_file: &Path) -> Result<()> {
@@ -15,7 +15,7 @@ pub fn init(wordlist_file: &Path) -> Result<()> {
 
     let wordlist = content
         .split(|b| *b == b'\n')
-        .map(|line| line.trim_ascii().to_ascii_lowercase())
+        .map(|line| line.trim_ascii().to_ascii_lowercase().into_boxed_slice())
         .filter(|line| !line.is_empty())
         .collect();
     INSTANCE

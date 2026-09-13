@@ -1,4 +1,4 @@
-use crate::{HexString, config};
+use crate::{Bytes, config};
 
 const MIN_SCORE: u64 = 10;
 
@@ -10,7 +10,7 @@ pub struct Candidate {
     // INFO: is it better to hold a reference to ciphertext
     // and perhaps a decrypt function rather have a bunch of plaintext
     // is that better for memory and/or a better approach in general?
-    pub plaintext: HexString,
+    pub plaintext: Bytes,
 }
 
 impl Candidate {
@@ -19,11 +19,14 @@ impl Candidate {
     }
 }
 
-pub fn score(text: &HexString) -> u64 {
+pub fn score(text: &Bytes) -> u64 {
     let words = text.as_bytes().split(|b| *b == b' ');
     let mut answer = 0;
     for word in words {
-        answer += if config().wordlist.contains(&word.to_ascii_lowercase()) {
+        answer += if config()
+            .wordlist
+            .contains(word.to_ascii_lowercase().as_slice())
+        {
             word.len() * word.len()
         } else {
             0

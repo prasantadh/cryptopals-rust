@@ -1,5 +1,5 @@
 #![allow(missing_docs)]
-use cryptopals::{Error, HexString, single_byte_xor};
+use cryptopals::{Bytes, Error, single_byte_xor};
 
 use clap::{Parser, ValueEnum};
 use std::fs;
@@ -32,7 +32,7 @@ fn run() -> cryptopals::Result<()> {
         source,
     })?;
 
-    let ciphertexts = HexString::parse_lines(&content)?;
+    let ciphertexts = Bytes::parse_hex_lines(&content)?;
 
     // run the solver
     match args.mode {

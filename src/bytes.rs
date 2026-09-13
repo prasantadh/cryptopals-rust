@@ -1,26 +1,33 @@
 use crate::{Error, Result};
 use base64::prelude::*;
-use core::{clone::Clone, fmt::Display, iter::Iterator, str::FromStr};
+use core::{clone::Clone, fmt::Display, iter::Iterator};
+use std::convert::From;
 use std::fmt::Debug;
 
 #[derive(Eq, PartialEq, Clone)]
-pub struct HexString(Box<[u8]>);
+pub struct Bytes(Box<[u8]>);
 
-impl FromStr for HexString {
-    type Err = Error;
-    fn from_str(s: &str) -> Result<Self> {
-        let value = hex::decode(s)?;
-        Ok(Self(value.into_boxed_slice()))
+impl From<&str> for Bytes {
+    fn from(s: &str) -> Self {
+        Self(Box::from(s.as_bytes()))
     }
 }
 
-// INFO: it might not be a great idea to implement From<[u8]>
-// because we would be unsure if it is a hex string b"ae28ff"
-// or if it is an actual values we should hold
-
-impl HexString {
+impl Bytes {
     pub fn to_base64(&self) -> String {
         BASE64_STANDARD.encode(&self.0)
+    }
+
+    pub fn from_b64(content: &str) -> Result<Self> {
+        BASE64_STANDARD.decode(content).map_or_else(
+            |err| Err(Error::Base64Decode(err)),
+            |val| Ok(Self(val.into_boxed_slice())),
+        )
+    }
+
+    pub fn from_hex(content: &str) -> Result<Self> {
+        let value = hex::decode(content)?;
+        Ok(Self(value.into_boxed_slice()))
     }
 
     pub fn fixed_xor(&self, other: &Self) -> Result<Self> {
@@ -34,6 +41,19 @@ impl HexString {
             .map(|(a, b)| a ^ b)
             .collect();
         Ok(Self(answer))
+    }
+
+    pub fn repeat_xor(&self, other: &Self) -> Self {
+        if other.is_empty() {
+            return self.clone();
+        }
+        let answer: Box<[u8]> = self
+            .0
+            .iter()
+            .zip(other.as_bytes().iter().cycle())
+            .map(|(a, b)| a ^ b)
+            .collect();
+        Self(answer)
     }
 
     pub fn single_byte_xor(&self, key: u8) -> Self {
@@ -52,18 +72,17 @@ impl HexString {
         &self.0
     }
 
-    pub fn parse_lines(content: &str) -> Result<Vec<Self>> {
+    pub fn parse_hex_lines(content: &str) -> Result<Vec<Self>> {
         content
             .lines()
-            // INFO: Is map filter map and anti-pattern and should i prefer filter_map?
             .map(str::trim)
             .filter(|line| !line.is_empty())
-            .map(Self::from_str)
+            .map(Self::from_hex)
             .collect()
     }
 }
 
-impl Debug for HexString {
+impl Debug for Bytes {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         for c in self.as_bytes() {
             if c.is_ascii() && !c.is_ascii_control() {
@@ -76,7 +95,7 @@ impl Debug for HexString {
     }
 }
 
-impl Display for HexString {
+impl Display for Bytes {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", String::from_utf8_lossy(&self.0))
     }
@@ -84,14 +103,14 @@ impl Display for HexString {
 
 #[cfg(test)]
 mod test {
-    use core::str::FromStr;
 
-    use crate::HexString;
+    use super::*;
+
     #[test]
     fn to_base64_works() {
         let input = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d";
         assert_eq!(
-            HexString::from_str(input)
+            Bytes::from_hex(input)
                 .expect("input taken from cryptopals must be valid hex string")
                 .to_base64(),
             "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
@@ -100,12 +119,25 @@ mod test {
 
     #[test]
     fn fixed_xor_works() {
-        let s1 =
-            HexString::from_str("1c0111001f010100061a024b53535009181c").expect("valid hexstring");
-        let s2 =
-            HexString::from_str("686974207468652062756c6c277320657965").expect("valid hexstring");
+        let s1 = Bytes::from_hex("1c0111001f010100061a024b53535009181c").expect("valid hexstring");
+        let s2 = Bytes::from_hex("686974207468652062756c6c277320657965").expect("valid hexstring");
         let result =
-            HexString::from_str("746865206b696420646f6e277420706c6179").expect("valid hexstring");
+            Bytes::from_hex("746865206b696420646f6e277420706c6179").expect("valid hexstring");
         assert_eq!(s1.fixed_xor(&s2).expect("successful xor"), result);
+    }
+
+    #[test]
+    fn repeat_xor_works() {
+        let s1 = Bytes::from(
+            "Burning 'em, if you ain't quick and nimble
+I go crazy when I hear a cymbal",
+        );
+        let s2 = Bytes::from("ICE");
+        assert_eq!(
+            s1.repeat_xor(&s2),
+            Bytes::from_hex(
+                "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"
+            ).unwrap()
+        )
     }
 }
